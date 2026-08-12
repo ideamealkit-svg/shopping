@@ -12,16 +12,16 @@ declare global {
 }
 
 type TossPayment = {
-  requestPayment: (request: { orderId: string; orderName: string; successUrl: string; failUrl: string; customerEmail?: string; customerName?: string; customerMobilePhone?: string }) => Promise<void>;
+  requestPayment: (request: { method: "CARD"; amount: { currency: "KRW"; value: number }; orderId: string; orderName: string; successUrl: string; failUrl: string; customerEmail?: string; customerName?: string; customerMobilePhone?: string }) => Promise<void>;
 };
 
 type Cart = Record<string, number>;
 type Address = { recipient?: string; phone?: string; zonecode?: string; address?: string; detail?: string };
 const cartKey = "nova-cart";
 const addressKey = "nova-default-delivery-address";
-// 클라이언트 키는 결제 UI를 표시하기 위한 공개 키입니다. 승인용 시크릿 키는
-// GitHub Pages에 둘 수 없으므로 절대 브라우저로 전달하지 않습니다.
-const TOSS_CLIENT_KEY = "test_gck_docs_Ovk5rk1EwkEbPOW43nO7xlzm";
+// 일반 결제창에는 API 개별 연동 클라이언트 키(test_ck_...)를 사용합니다.
+// 승인용 시크릿 키는 GitHub Pages에 둘 수 없으므로 브라우저로 전달하지 않습니다.
+const TOSS_CLIENT_KEY = "test_ck_kYG57Eba3GPQpa1O7RWLVpWDOxmA";
 
 function won(value: number) { return new Intl.NumberFormat("ko-KR", { style: "currency", currency: "KRW", maximumFractionDigits: 0 }).format(value); }
 function customerKey() { const key = "nova-toss-customer-key"; const saved = window.localStorage.getItem(key); if (saved) return saved; const next = crypto.randomUUID(); window.localStorage.setItem(key, next); return next; }
@@ -54,7 +54,7 @@ export default function CheckoutPage() {
           await new Promise<void>((resolve, reject) => {
             const existing = document.getElementById("toss-payments-sdk") as HTMLScriptElement | null;
             if (existing) { existing.addEventListener("load", () => resolve(), { once: true }); existing.addEventListener("error", () => reject(new Error("SDK_LOAD_FAILED")), { once: true }); return; }
-            const script = document.createElement("script"); script.id = "toss-payments-sdk"; script.src = "https://js.tosspayments.com/v2/standard"; script.async = true; script.onload = () => resolve(); script.onerror = () => reject(new Error("SDK_LOAD_FAILED")); document.head.appendChild(script);
+            const script = document.createElement("script"); script.id = "toss-payments-sdk"; script.src = withBasePath("/vendor/toss-payments-v2.js"); script.async = true; script.onload = () => resolve(); script.onerror = () => reject(new Error("SDK_LOAD_FAILED")); document.head.appendChild(script);
           });
         }
         for (let attempt = 0; attempt < 20 && !window.TossPayments; attempt += 1) await new Promise((resolve) => window.setTimeout(resolve, 100));
@@ -73,7 +73,7 @@ export default function CheckoutPage() {
     setMessage("");
     try {
       const origin = `${window.location.origin}${window.location.pathname.split("/checkout")[0]}`;
-      await payment.current.requestPayment({ orderId: orderId(), orderName, successUrl: `${origin}/checkout/success`, failUrl: `${origin}/checkout/fail`, customerName: address.recipient, customerMobilePhone: address.phone });
+      await payment.current.requestPayment({ method: "CARD", amount: { currency: "KRW", value: amount }, orderId: orderId(), orderName, successUrl: `${origin}/checkout/success`, failUrl: `${origin}/checkout/fail`, customerName: address.recipient, customerMobilePhone: address.phone.replace(/[^0-9]/g, "") });
     } catch (error) { setMessage(error instanceof Error ? error.message : "결제를 시작하지 못했습니다."); }
   };
 
