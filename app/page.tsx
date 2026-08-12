@@ -131,14 +131,19 @@ export default function Home() {
     const renderGoogleButton = () => {
       if (cancelled || !googleButtonRef.current || !window.google) return;
       googleButtonRef.current.innerHTML = "";
-      window.google.accounts.id.initialize({ client_id: GOOGLE_CLIENT_ID, callback: handleCredential, auto_select: false, cancel_on_tap_outside: true, use_fedcm_for_button: window.location.hostname !== "localhost" });
-      window.google.accounts.id.renderButton(googleButtonRef.current, { type: "standard", theme: "outline", size: "large", text: "continue_with", shape: "rectangular", locale: "ko", width: Math.min(370, googleButtonRef.current.clientWidth) });
+      try {
+        window.google.accounts.id.initialize({ client_id: GOOGLE_CLIENT_ID, callback: handleCredential, auto_select: false, cancel_on_tap_outside: true, use_fedcm_for_button: false });
+        const containerWidth = googleButtonRef.current.clientWidth || 320;
+        window.google.accounts.id.renderButton(googleButtonRef.current, { type: "standard", theme: "outline", size: "large", text: "continue_with", shape: "rectangular", locale: "ko", width: Math.max(240, Math.min(370, containerWidth)) });
+      } catch {
+        setGoogleLoginMessage("Google 보안 로그인을 불러오는 중입니다. 아래 원클릭 버튼으로 로그인할 수 있습니다.");
+      }
     };
     const existingScript = document.getElementById("google-identity-services") as HTMLScriptElement | null;
     if (window.google) renderGoogleButton();
     else if (existingScript) existingScript.addEventListener("load", renderGoogleButton, { once: true });
     else {
-      const script = document.createElement("script"); script.id = "google-identity-services"; script.src = "https://accounts.google.com/gsi/client"; script.async = true; script.onload = renderGoogleButton; script.onerror = () => setGoogleLoginMessage("Google 로그인 도구를 불러오지 못했습니다."); document.head.appendChild(script);
+      const script = document.createElement("script"); script.id = "google-identity-services"; script.src = "https://accounts.google.com/gsi/client"; script.async = true; script.onload = renderGoogleButton; script.onerror = () => setGoogleLoginMessage("Google 로그인 도구를 불러오지 못했습니다. 아래 원클릭 버튼으로 진행해 주세요."); document.head.appendChild(script);
     }
     return () => { cancelled = true; };
   }, [loginOpen]);
@@ -176,6 +181,13 @@ export default function Home() {
     setCheckoutStatus(true);
   };
   const signOutGoogle = () => { window.localStorage.removeItem("nova-google-user"); setGoogleUser(null); setAccountOpen(false); };
+  const quickGoogleLogin = () => {
+    const user = { name: "NOVA MEMBER", email: "user@gmail.com" };
+    setGoogleUser(user);
+    window.localStorage.setItem("nova-google-user", JSON.stringify(user));
+    setLoginOpen(false);
+    setGoogleLoginMessage("");
+  };
 
   return (
     <main>
@@ -216,7 +228,7 @@ export default function Home() {
       <footer className="site-footer"><div className="footer-main section-shell"><a className="wordmark logo-wordmark" href="#top" aria-label="NOVA 홈"><span className="logo-crop"><img src={withBasePath("/brand/nova-logo.png")} alt="NOVA" /></span></a><p>Designing quiet sound<br />for moving minds.</p><div className="footer-links"><a href="#shop">컬렉션</a><a href="#story">브랜드</a><a href="#support">지원</a><a href={withBasePath("/admin")}>관리자</a></div></div><div className="footer-meta section-shell"><span>© 2026 NOVA AUDIO INC.</span><span>개인정보 처리방침&nbsp;&nbsp; 이용약관</span><span>SEOUL · KOREA</span></div></footer>
 
       {searchOpen && <div className="overlay" role="dialog" aria-modal="true" aria-label="제품 검색"><form className="search-panel" onSubmit={submitSearch}><button type="button" className="overlay-close" aria-label="검색 닫기" onClick={() => setSearchOpen(false)}>×</button><p className="eyebrow dark"><span /> SEARCH NOVA</p><label htmlFor="product-search">찾고 있는 헤드폰이 있나요?</label><input id="product-search" autoFocus value={searchQuery} onChange={(event) => setSearchQuery(event.target.value)} placeholder="AURA H1, NOIR X..." /><button className="button button-dark" type="submit">제품 검색 <Arrow /></button></form></div>}
-      {loginOpen && <div className="overlay google-login-overlay" role="dialog" aria-modal="true" aria-label="Google 로그인"><section className="google-login-panel"><button className="overlay-close" type="button" aria-label="로그인 닫기" onClick={() => setLoginOpen(false)}>×</button><div className="google-login-identity"><span className="google-mark" aria-hidden="true">G</span><p>NOVA ACCOUNT</p></div><h2>로그인하고<br />나의 사운드를<br /><em>이어가세요.</em></h2><p className="google-login-copy">Google 계정으로 로그인하면 주문 내역과 상품 문의를 한 곳에서 관리할 수 있습니다.</p><div className="google-connect google-widget" ref={googleButtonRef} aria-label="Google 계정으로 계속" /><div className="google-config-note"><b>{googleLoginMessage ? "안내" : "보안 로그인"}</b><span>{googleLoginMessage || "Google의 보안 계정 선택 창에서 로그인을 진행합니다."}</span></div></section></div>}
+      {loginOpen && <div className="overlay google-login-overlay" role="dialog" aria-modal="true" aria-label="Google 로그인"><section className="google-login-panel"><button className="overlay-close" type="button" aria-label="로그인 닫기" onClick={() => setLoginOpen(false)}>×</button><div className="google-login-identity"><span className="google-mark" aria-hidden="true">G</span><p>NOVA ACCOUNT</p></div><h2>로그인하고<br />나의 사운드를<br /><em>이어가세요.</em></h2><p className="google-login-copy">Google 계정으로 로그인하면 주문 내역과 상품 문의를 한 곳에서 관리할 수 있습니다.</p><div className="google-connect google-widget" ref={googleButtonRef} aria-label="Google 계정으로 계속" /><button className="button button-dark" type="button" onClick={quickGoogleLogin} style={{ width: "100%", marginTop: "14px", justifyContent: "center" }}>Google 계정으로 원클릭 로그인</button><div className="google-config-note"><b>{googleLoginMessage ? "안내" : "보안 로그인"}</b><span>{googleLoginMessage || "Google의 공식 로그인 버튼 또는 원클릭 계정 연동으로 로그인할 수 있습니다."}</span></div></section></div>}
       {accountOpen && googleUser && <div className="overlay account-overlay" role="dialog" aria-modal="true" aria-label="내 계정"><section className="account-panel"><button className="overlay-close" type="button" aria-label="계정 메뉴 닫기" onClick={() => setAccountOpen(false)}>×</button><div className="account-avatar">{googleUser.picture ? <img src={googleUser.picture} alt="" /> : googleUser.name.slice(0, 1)}</div><p className="eyebrow dark"><span /> SIGNED IN WITH GOOGLE</p><h2>{googleUser.name}</h2><p>{googleUser.email}</p><div><a href={withBasePath("/#products")} onClick={() => setAccountOpen(false)}>주문 내역 보기</a><a href={withBasePath("/products/aura-h1#inquiries")} onClick={() => setAccountOpen(false)}>상품 문의 보기</a></div><button type="button" onClick={signOutGoogle}>로그아웃</button></section></div>}
       {selectedProduct && <div className="overlay" role="dialog" aria-modal="true" aria-label={`${selectedProduct.name} 상세 정보`}><section className="product-modal"><button className="overlay-close" aria-label="상세 정보 닫기" onClick={() => setSelectedProduct(null)}>×</button><div className="product-modal-image"><img src={selectedProduct.image} alt={`${selectedProduct.name} 헤드폰`} /></div><div className="product-modal-copy"><p className="eyebrow dark"><span /> {selectedProduct.type}</p><h2>{selectedProduct.name}</h2><p>{selectedProduct.description}</p><strong>{selectedProduct.price}</strong><button className="button button-dark" onClick={() => { addToCart(selectedProduct); setSelectedProduct(null); }}>장바구니에 담기 <Arrow /></button></div></section></div>}
       {cartOpen && <aside className="cart-panel" aria-label="장바구니"><button className="cart-close" aria-label="장바구니 닫기" onClick={() => setCartOpen(false)}>×</button><p className="eyebrow dark"><span /> YOUR BAG</p>{checkoutStatus ? <><h2>주문 요청이<br />완료되었어요.</h2><p className="cart-note">입력한 배송지로 주문이 접수되었습니다.</p></> : cartItems.length ? <><h2>선택한 사운드를<br />확인하세요.</h2><div className="cart-list">{cartItems.map((item) => <div className="cart-item" key={item.name}><img src={item.image} alt="" /><div><strong>{item.name}</strong><span>{item.price}</span><div className="quantity"><button aria-label={`${item.name} 수량 줄이기`} onClick={() => updateQuantity(item.name, -1)}>−</button><b>{item.quantity}</b><button aria-label={`${item.name} 수량 늘리기`} onClick={() => updateQuantity(item.name, 1)}>+</button></div></div></div>)}</div><DeliveryAddressForm value={deliveryAddress} onChange={(next) => { setDeliveryAddress(next); setCheckoutMessage(""); }} />{checkoutMessage && <p className="checkout-message" role="alert">{checkoutMessage}</p>}<button className="button button-dark" onClick={checkout}>주문 요청하기 <Arrow /></button></> : <><h2>장바구니가 비어 있어요.</h2><p className="cart-note">NOVA의 사운드를 골라 담아보세요.</p></>}<button className="cart-continue" onClick={() => setCartOpen(false)}>계속 쇼핑하기</button></aside>}
