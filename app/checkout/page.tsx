@@ -20,13 +20,15 @@ type TossWidgets = {
 
 type Cart = Record<string, number>;
 type Address = { recipient?: string; phone?: string; zonecode?: string; address?: string; detail?: string };
-type PreparedOrder = { orderId: string; amount: number; orderName: string; orderToken: string };
-
 const cartKey = "nova-cart";
 const addressKey = "nova-default-delivery-address";
+// 클라이언트 키는 결제 UI를 표시하기 위한 공개 키입니다. 승인용 시크릿 키는
+// GitHub Pages에 둘 수 없으므로 절대 브라우저로 전달하지 않습니다.
+const TOSS_CLIENT_KEY = "test_gck_docs_Ovk5rk1EwkEbPOW43nO7xlzm";
 
 function won(value: number) { return new Intl.NumberFormat("ko-KR", { style: "currency", currency: "KRW", maximumFractionDigits: 0 }).format(value); }
 function customerKey() { const key = "nova-toss-customer-key"; const saved = window.localStorage.getItem(key); if (saved) return saved; const next = crypto.randomUUID(); window.localStorage.setItem(key, next); return next; }
+function orderId() { return `NOVA-${crypto.randomUUID().replace(/-/g, "").slice(0, 26)}`; }
 
 export default function CheckoutPage() {
   const [cart, setCart] = useState<Cart>({});
@@ -34,7 +36,6 @@ export default function CheckoutPage() {
   const [ready, setReady] = useState(false);
   const [widgetState, setWidgetState] = useState<"loading" | "ready" | "error">("loading");
   const [message, setMessage] = useState("");
-  const [clientKey, setClientKey] = useState("");
   const widgets = useRef<TossWidgets | null>(null);
 
   const items = useMemo(() => defaultCatalog.filter((product) => cart[product.name]).map((product) => ({ ...product, quantity: cart[product.name] })), [cart]);
@@ -48,17 +49,7 @@ export default function CheckoutPage() {
   }, []);
 
   useEffect(() => {
-    fetch(withBasePath("/api/payments/config"))
-      .then(async (response) => {
-        const body = await response.json() as { clientKey?: string };
-        if (!response.ok || !body.clientKey) throw new Error("MISSING_CLIENT_KEY");
-        setClientKey(body.clientKey);
-      })
-      .catch(() => { setWidgetState("error"); setMessage("토스페이먼츠 테스트 클라이언트 키가 아직 설정되지 않았습니다."); });
-  }, []);
-
-  useEffect(() => {
-    if (!ready || !amount || !clientKey) return;
+    if (!ready || !amount) return;
     let disposed = false;
     const render = async () => {
       try {
@@ -70,7 +61,7 @@ export default function CheckoutPage() {
           });
         }
         if (disposed || !window.TossPayments) return;
-        const nextWidgets = window.TossPayments(clientKey).widgets({ customerKey: customerKey() });
+        const nextWidgets = window.TossPayments(TOSS_CLIENT_KEY).widgets({ customerKey: customerKey() });
         await nextWidgets.setAmount({ value: amount, currency: "KRW" });
         await nextWidgets.renderPaymentMethods({ selector: "#toss-payment-methods", variantKey: "DEFAULT" });
         await nextWidgets.renderAgreement({ selector: "#toss-payment-agreement", variantKey: "DEFAULT" });
@@ -86,11 +77,8 @@ export default function CheckoutPage() {
     if (!address.recipient || !address.phone || !address.address || !address.detail) { setMessage("배송지 정보가 없습니다. 마이페이지에서 기본 배송지를 저장해 주세요."); return; }
     setMessage("");
     try {
-      const response = await fetch(withBasePath("/api/payments/prepare"), { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ items: items.map(({ name, quantity }) => ({ name, quantity })) }) });
-      const prepared = await response.json() as PreparedOrder & { message?: string };
-      if (!response.ok) throw new Error(prepared.message || "주문 정보를 준비하지 못했습니다.");
       const origin = `${window.location.origin}${window.location.pathname.split("/checkout")[0]}`;
-      await widgets.current.requestPayment({ orderId: prepared.orderId, orderName: prepared.orderName, successUrl: `${origin}/checkout/success?orderToken=${encodeURIComponent(prepared.orderToken)}`, failUrl: `${origin}/checkout/fail`, customerName: address.recipient, customerMobilePhone: address.phone });
+      await widgets.current.requestPayment({ orderId: orderId(), orderName, successUrl: `${origin}/checkout/success`, failUrl: `${origin}/checkout/fail`, customerName: address.recipient, customerMobilePhone: address.phone });
     } catch (error) { setMessage(error instanceof Error ? error.message : "결제를 시작하지 못했습니다."); }
   };
 
