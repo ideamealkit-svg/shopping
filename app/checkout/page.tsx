@@ -69,11 +69,11 @@ export default function CheckoutPage() {
 
   const requestPayment = async () => {
     if (!payment.current) return;
-    if (!address.recipient || !address.phone || !address.address || !address.detail) { setMessage("배송지 정보가 없습니다. 마이페이지에서 기본 배송지를 저장해 주세요."); return; }
+    if (!address.address) { setMessage("배송지 주소가 없습니다. 마이페이지에서 기본 배송지를 저장해 주세요."); return; }
     setMessage("");
     try {
       const origin = `${window.location.origin}${window.location.pathname.split("/checkout")[0]}`;
-      await payment.current.requestPayment({ method: "CARD", amount: { currency: "KRW", value: amount }, orderId: orderId(), orderName, successUrl: `${origin}/checkout/success`, failUrl: `${origin}/checkout/fail`, customerName: address.recipient, customerMobilePhone: address.phone.replace(/[^0-9]/g, "") });
+      await payment.current.requestPayment({ method: "CARD", amount: { currency: "KRW", value: amount }, orderId: orderId(), orderName, successUrl: `${origin}/checkout/success`, failUrl: `${origin}/checkout/fail`, customerName: address.recipient || undefined, customerMobilePhone: address.phone?.replace(/[^0-9]/g, "") || undefined });
     } catch (error) { setMessage(error instanceof Error ? error.message : "결제를 시작하지 못했습니다."); }
   };
 
