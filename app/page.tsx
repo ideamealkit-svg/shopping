@@ -242,37 +242,8 @@ export default function Home() {
     }
     setCheckoutMessage("");
 
-    const now = new Date();
-    const formattedDate = `${now.getFullYear()}. ${String(now.getMonth() + 1).padStart(2, "0")}. ${String(now.getDate()).padStart(2, "0")} ${String(now.getHours()).padStart(2, "0")}:${String(now.getMinutes()).padStart(2, "0")}`;
-    const orderId = `N-${Math.floor(100000 + Math.random() * 900000)}`;
-
-    const totalAmount = cartItems.reduce((acc, item) => {
-      const numeric = parseInt(item.price.replace(/[^0-9]/g, ""), 10) || 0;
-      return acc + numeric * item.quantity;
-    }, 0);
-    const formattedTotalPrice = `₩${totalAmount.toLocaleString()}`;
-
-    const newOrder: OrderRecord = {
-      id: orderId,
-      date: formattedDate,
-      items: cartItems.map((item) => ({
-        name: item.name,
-        price: item.price,
-        quantity: item.quantity,
-        image: item.image
-      })),
-      totalPrice: formattedTotalPrice,
-      address: { ...deliveryAddress },
-      status: "주문 완료"
-    };
-
-    const nextOrders = [newOrder, ...orders];
-    setOrders(nextOrders);
-    window.localStorage.setItem("nova-orders", JSON.stringify(nextOrders));
     window.localStorage.setItem("nova-default-delivery-address", JSON.stringify(deliveryAddress));
-
-    setCart({});
-    setCheckoutStatus(true);
+    window.location.href = withBasePath("/checkout");
   };
 
   const updateOrderAddress = (orderId: string) => {
@@ -341,7 +312,7 @@ export default function Home() {
 
       {searchOpen && <div className="overlay" role="dialog" aria-modal="true" aria-label="제품 검색"><form className="search-panel" onSubmit={submitSearch}><button type="button" className="overlay-close" aria-label="검색 닫기" onClick={() => setSearchOpen(false)}>×</button><p className="eyebrow dark"><span /> SEARCH NOVA</p><label htmlFor="product-search">찾고 있는 헤드폰이 있나요?</label><input id="product-search" autoFocus value={searchQuery} onChange={(event) => setSearchQuery(event.target.value)} placeholder="AURA H1, NOIR X..." /><button className="button button-dark" type="submit">제품 검색 <Arrow /></button></form></div>}
       {loginOpen && <div className="overlay google-login-overlay" role="dialog" aria-modal="true" aria-label="Google 로그인"><section className="google-login-panel"><button className="overlay-close" type="button" aria-label="로그인 닫기" onClick={() => setLoginOpen(false)}>×</button><div className="google-login-identity"><span className="google-mark" aria-hidden="true">G</span><p>NOVA ACCOUNT</p></div><h2>로그인하고<br />나의 사운드를<br /><em>이어가세요.</em></h2><p className="google-login-copy">Google 계정으로 로그인하면 주문 내역과 상품 문의를 한 곳에서 관리할 수 있습니다.</p><div className="google-connect google-widget" ref={googleButtonRef} aria-label="Google 계정으로 계속" /><button className="button button-dark" type="button" onClick={quickGoogleLogin} style={{ width: "100%", marginTop: "14px", justifyContent: "center" }}>Google 계정으로 원클릭 로그인</button><div className="google-config-note"><b>{googleLoginMessage ? "안내" : "보안 로그인"}</b><span>{googleLoginMessage || "Google의 공식 로그인 버튼 또는 원클릭 계정 연동으로 로그인할 수 있습니다."}</span></div></section></div>}
-      {accountOpen && googleUser && <div className="overlay account-overlay" role="dialog" aria-modal="true" aria-label="내 계정"><section className="account-panel"><button className="overlay-close" type="button" aria-label="계정 메뉴 닫기" onClick={() => setAccountOpen(false)}>×</button><div className="account-avatar">{googleUser.picture ? <img src={googleUser.picture} alt="" /> : googleUser.name.slice(0, 1)}</div><p className="eyebrow dark"><span /> SIGNED IN WITH GOOGLE</p><h2>{googleUser.name}</h2><p>{googleUser.email}</p><div><button type="button" className="button button-dark" onClick={() => { setAccountOpen(false); setOrdersOpen(true); }} style={{ width: "100%", margin: "14px 0 8px", justifyContent: "center" }}>주문 내역 보기 ({orders.length}건)</button><a href={withBasePath("/products/aura-h1#inquiries")} onClick={() => setAccountOpen(false)} style={{ display: "block", textAlign: "center", marginTop: "8px", textDecoration: "underline", fontSize: "13px" }}>상품 문의 보기</a></div><button type="button" onClick={signOutGoogle} style={{ marginTop: "18px" }}>로그아웃</button></section></div>}
+      {accountOpen && googleUser && <div className="overlay account-overlay" role="dialog" aria-modal="true" aria-label="내 계정"><section className="account-panel"><button className="overlay-close" type="button" aria-label="계정 메뉴 닫기" onClick={() => setAccountOpen(false)}>×</button><div className="account-avatar">{googleUser.picture ? <img src={googleUser.picture} alt="" /> : googleUser.name.slice(0, 1)}</div><p className="eyebrow dark"><span /> SIGNED IN WITH GOOGLE</p><h2>{googleUser.name}</h2><p>{googleUser.email}</p><div><a href={withBasePath("/mypage")} onClick={() => setAccountOpen(false)} style={{ display: "block", textAlign: "center", margin: "14px 0 8px", textDecoration: "underline", fontSize: "13px" }}>마이페이지 · 배송지</a><button type="button" className="button button-dark" onClick={() => { setAccountOpen(false); setOrdersOpen(true); }} style={{ width: "100%", margin: "8px 0", justifyContent: "center" }}>주문 내역 보기 ({orders.length}건)</button><a href={withBasePath("/products/aura-h1#inquiries")} onClick={() => setAccountOpen(false)} style={{ display: "block", textAlign: "center", marginTop: "8px", textDecoration: "underline", fontSize: "13px" }}>상품 문의 보기</a></div><button type="button" onClick={signOutGoogle} style={{ marginTop: "18px" }}>로그아웃</button></section></div>}
       {ordersOpen && <div className="overlay orders-overlay" role="dialog" aria-modal="true" aria-label="주문 내역"><section className="orders-panel"><button className="overlay-close" type="button" aria-label="주문 내역 닫기" onClick={() => setOrdersOpen(false)}>×</button><div className="orders-header"><p className="eyebrow dark"><span /> ORDER HISTORY</p><h2>{googleUser ? `${googleUser.name}님의` : "나의"} 주문 내역</h2></div>{orders.length === 0 ? <div className="empty-orders-view"><p>아직 완료된 주문 내역이 없습니다.</p><button className="button button-dark" onClick={() => { setOrdersOpen(false); setCartOpen(true); }}>장바구니 확인하기 <Arrow /></button></div> : <div className="orders-list">{orders.map((order) => <article className="order-card" key={order.id}><div className="order-card-header"><div><strong>주문 번호 {order.id}</strong><span>{order.date}</span></div><span className="order-status-tag">{order.status}</span></div><div className="order-items-list">{order.items.map((item) => <div className="order-item-row" key={item.name}><img src={withBasePath(item.image)} alt={item.name} /><div><strong>{item.name}</strong><span>{item.quantity}개 · {item.price}</span></div></div>)}</div><div className="order-card-footer"><div className="order-address-box"><b>배송지 정보 (다음 우편번호 연동)</b><p>[{order.address.zonecode}] {order.address.address} {order.address.detail}</p><button type="button" onClick={() => updateOrderAddress(order.id)} style={{ marginTop: "6px", textDecoration: "underline", color: "#16191c", background: "transparent", border: 0, padding: 0, font: "inherit", fontSize: "12px", cursor: "pointer" }}>주소 변경 (다음 우편번호 검색)</button></div><div className="order-total"><span>총 결제금액</span><strong>{order.totalPrice}</strong></div></div></article>)}</div>}</section></div>}
       {selectedProduct && <div className="overlay" role="dialog" aria-modal="true" aria-label={`${selectedProduct.name} 상세 정보`}><section className="product-modal"><button className="overlay-close" aria-label="상세 정보 닫기" onClick={() => setSelectedProduct(null)}>×</button><div className="product-modal-image"><img src={selectedProduct.image} alt={`${selectedProduct.name} 헤드폰`} /></div><div className="product-modal-copy"><p className="eyebrow dark"><span /> {selectedProduct.type}</p><h2>{selectedProduct.name}</h2><p>{selectedProduct.description}</p><strong>{selectedProduct.price}</strong><button className="button button-dark" onClick={() => { addToCart(selectedProduct); setSelectedProduct(null); }}>장바구니에 담기 <Arrow /></button></div></section></div>}
       {cartOpen && <aside className="cart-panel" aria-label="장바구니"><button className="cart-close" aria-label="장바구니 닫기" onClick={() => setCartOpen(false)}>×</button><p className="eyebrow dark"><span /> YOUR BAG</p>{checkoutStatus ? <><h2>주문 요청이<br />완료되었어요.</h2><p className="cart-note">입력한 배송지로 주문이 접수되었습니다.</p></> : cartItems.length ? <><h2>선택한 사운드를<br />확인하세요.</h2><div className="cart-list">{cartItems.map((item) => <div className="cart-item" key={item.name}><img src={item.image} alt="" /><div><strong>{item.name}</strong><span>{item.price}</span><div className="quantity"><button aria-label={`${item.name} 수량 줄이기`} onClick={() => updateQuantity(item.name, -1)}>−</button><b>{item.quantity}</b><button aria-label={`${item.name} 수량 늘리기`} onClick={() => updateQuantity(item.name, 1)}>+</button></div></div></div>)}</div><DeliveryAddressForm value={deliveryAddress} onChange={(next) => { setDeliveryAddress(next); setCheckoutMessage(""); }} />{checkoutMessage && <p className="checkout-message" role="alert">{checkoutMessage}</p>}<button className="button button-dark" onClick={checkout}>주문 요청하기 <Arrow /></button></> : <><h2>장바구니가 비어 있어요.</h2><p className="cart-note">NOVA의 사운드를 골라 담아보세요.</p></>}<button className="cart-continue" onClick={() => setCartOpen(false)}>계속 쇼핑하기</button></aside>}

@@ -7,7 +7,7 @@ const output = resolve(root, "out");
 const basePath = process.env.NEXT_PUBLIC_BASE_PATH ?? "";
 const port = 4173;
 const host = "127.0.0.1";
-const routes = ["/", "/products", "/admin", "/mypage", "/products/aura-h1", "/products/noir-x", "/products/tide-s", "/products/echo-pro"];
+const routes = ["/", "/products", "/admin", "/mypage", "/checkout", "/checkout/success", "/checkout/fail", "/products/aura-h1", "/products/noir-x", "/products/tide-s", "/products/echo-pro", "/products/nova-lite"];
 
 const server = spawn(process.execPath, [join(root, "node_modules", "vinext", "dist", "cli.js"), "start", "--port", String(port), "--hostname", host], {
   cwd: root,
