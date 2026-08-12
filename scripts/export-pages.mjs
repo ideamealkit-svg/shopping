@@ -61,16 +61,27 @@ try {
       });
     }
 
+    // Replace /_next/ with /next/ in HTML so Jekyll underscore blocking is bypassed
+    html = html.replaceAll("/_next/", "/next/");
+
     await writeFile(file, html, "utf8");
   }
+
+  // Duplicate _next to next so both path aliases exist in out/
+  try {
+    await cp(join(output, "_next"), join(output, "next"), { recursive: true });
+  } catch {}
 
   // Prevent GitHub Pages from running Jekyll (which ignores _next / _assets)
   await writeFile(join(output, ".nojekyll"), "", "utf8");
 
+  // Explicitly instruct Jekyll to include _next and next directories if Jekyll executes
+  await writeFile(join(output, "_config.yml"), "include:\n  - _next\n  - next\n", "utf8");
+
   // Create 404.html SPA fallback for direct subpath navigations
   await cp(join(output, "index.html"), join(output, "404.html"));
 
-  console.log(`Exported ${routes.length} GitHub Pages routes, .nojekyll, and 404.html to out/`);
+  console.log(`Exported ${routes.length} GitHub Pages routes, next asset alias, .nojekyll, _config.yml, and 404.html to out/`);
 } finally {
   stop();
 }
