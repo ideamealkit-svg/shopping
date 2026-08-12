@@ -25,7 +25,9 @@ jobs:
         with:
           node-version: 22
           cache: npm
-      - run: npm ci
+      # package-lock.json is intentionally permissive while the visual font
+      # packages evolve; install resolves the current declared dependency set.
+      - run: npm install
       - run: npm run build:pages
       - uses: actions/upload-pages-artifact@v3
         with:
