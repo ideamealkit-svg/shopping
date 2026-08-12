@@ -51,7 +51,17 @@ try {
     if (!response.ok) throw new Error(`Failed to export ${route}: HTTP ${response.status}`);
     const file = outputFileFor(route);
     await mkdir(resolve(file, ".."), { recursive: true });
-    await writeFile(file, await response.text(), "utf8");
+
+    let html = await response.text();
+    if (basePath) {
+      const prefix = basePath.endsWith("/") ? basePath.slice(0, -1) : basePath;
+      html = html.replace(/(href|src|data-rsc-css-href)="\/([^"]*)"/g, (match, attr, path) => {
+        if (path.startsWith("/") || path.startsWith("http://") || path.startsWith("https://") || path.startsWith(`${prefix.slice(1)}/`)) return match;
+        return `${attr}="${prefix}/${path}"`;
+      });
+    }
+
+    await writeFile(file, html, "utf8");
   }
 
   // Prevent GitHub Pages from running Jekyll (which ignores _next / _assets)
