@@ -1,0 +1,38 @@
+.delivery-address {
+  display: grid;
+  gap: 9px;
+  margin: 22px 0 14px;
+  padding: 18px 0;
+  border-top: 1px solid #d4d5d1;
+  border-bottom: 1px solid #d4d5d1;
+}
+
+.delivery-address legend {
+  padding: 0 8px 0 0;
+  color: #6f747a;
+  font-family: var(--font-mono);
+  font-size: 9px;
+  letter-spacing: .11em;
+}
+
+.delivery-address input {
+  width: 100%;
+  min-height: 42px;
+  padding: 0 12px;
+  border: 1px solid #d2d4d0;
+  border-radius: 0;
+  background: #fff;
+  color: #16191c;
+  font-family: var(--font-korean);
+  font-size: 13px;
+  outline: none;
+}
+
+.delivery-address input:focus { border-color: #0d1014; box-shadow: 0 0 0 2px rgba(13,16,20,.08); }
+.delivery-address input[readonly] { background: #f9f9f7; color: #6f747a; }
+.delivery-postcode { display: grid; grid-template-columns: 1fr 104px; gap: 8px; }
+.delivery-postcode button { min-height: 42px; border: 1px solid #16191c; background: #16191c; color: #fff; font-family: var(--font-korean); font-size: 12px; cursor: pointer; }
+.delivery-postcode button:disabled { border-color: #b7bbb8; background: #b7bbb8; cursor: wait; }
+.checkout-message { margin: 0 0 12px; color: #b44038; font-family: var(--font-korean); font-size: 12px; }
+
+@media (max-width: 380px) { .delivery-postcode { grid-template-columns: 1fr 92px; } }

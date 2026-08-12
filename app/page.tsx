@@ -3,6 +3,7 @@
 import { FormEvent, useEffect, useMemo, useRef, useState } from "react";
 import { CATALOG_STORAGE_KEY, CatalogProduct, defaultCatalog, productSlug } from "./catalog";
 import { withBasePath } from "./site-path";
+import "./postcode.css";
 
 const heroSlide = { eyebrow: "AURA H1 / VIVID FORM", description: "선명한 표현력으로 당신의 일상에 가장 따뜻한 사운드를 더합니다.", image: "/campaign/aura-look-02.png", word: "VIVID" };
 const heroStatements = ["고요하게 듣고.", "선명하게 느끼고.", "온전히 몰입하다."];
@@ -12,7 +13,48 @@ type GoogleUser = { name: string; email: string; picture?: string };
 declare global {
   interface Window {
     google?: { accounts: { id: { initialize: (config: { client_id: string; callback: (response: { credential: string }) => void; auto_select?: boolean; cancel_on_tap_outside?: boolean; use_fedcm_for_button?: boolean }) => void; renderButton: (parent: HTMLElement, options: Record<string, string | number>) => void } } };
+    daum?: { Postcode: new (config: { oncomplete: (data: DaumPostcodeResult) => void }) => { open: () => void } };
   }
+}
+
+type DaumPostcodeResult = {
+  zonecode: string;
+  address: string;
+  roadAddress: string;
+  jibunAddress: string;
+  buildingName: string;
+  apartment: "Y" | "N";
+};
+
+type DeliveryAddress = { zonecode: string; address: string; detail: string };
+
+function DeliveryAddressForm({ value, onChange }: { value: DeliveryAddress; onChange: (next: DeliveryAddress) => void }) {
+  const [isReady, setIsReady] = useState(false);
+
+  useEffect(() => {
+    if (window.daum?.Postcode) { setIsReady(true); return; }
+    const existing = document.getElementById("daum-postcode-script") as HTMLScriptElement | null;
+    const onLoad = () => setIsReady(true);
+    if (existing) { existing.addEventListener("load", onLoad, { once: true }); return () => existing.removeEventListener("load", onLoad); }
+    const script = document.createElement("script");
+    script.id = "daum-postcode-script";
+    script.src = "https://t1.daumcdn.net/mapjsapi/bundle/postcode/prod/postcode.v2.js";
+    script.async = true;
+    script.onload = onLoad;
+    document.head.appendChild(script);
+    return () => script.removeEventListener("load", onLoad);
+  }, []);
+
+  const searchAddress = () => {
+    if (!window.daum?.Postcode) return;
+    new window.daum.Postcode({ oncomplete: (data) => {
+      const base = data.roadAddress || data.address || data.jibunAddress;
+      const extra = data.roadAddress && data.apartment === "Y" && data.buildingName ? ` (${data.buildingName})` : "";
+      onChange({ ...value, zonecode: data.zonecode, address: `${base}${extra}` });
+    } }).open();
+  };
+
+  return <fieldset className="delivery-address" aria-label="배송지 입력"><legend>DELIVERY ADDRESS</legend><div className="delivery-postcode"><input value={value.zonecode} readOnly placeholder="우편번호" aria-label="우편번호" /><button type="button" onClick={searchAddress} disabled={!isReady}>{isReady ? "주소 검색" : "불러오는 중"}</button></div><input value={value.address} readOnly placeholder="주소를 검색해 주세요" aria-label="기본 주소" /><input value={value.detail} onChange={(event) => onChange({ ...value, detail: event.target.value })} placeholder="상세 주소를 입력해 주세요" aria-label="상세 주소" /></fieldset>;
 }
 
 const categories = [
@@ -41,6 +83,8 @@ export default function Home() {
   const [searchQuery, setSearchQuery] = useState("");
   const [newsletterStatus, setNewsletterStatus] = useState<"idle" | "success">("idle");
   const [checkoutStatus, setCheckoutStatus] = useState(false);
+  const [deliveryAddress, setDeliveryAddress] = useState<DeliveryAddress>({ zonecode: "", address: "", detail: "" });
+  const [checkoutMessage, setCheckoutMessage] = useState("");
   const googleButtonRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -121,7 +165,16 @@ export default function Home() {
   const showCollection = (name: string) => { setSearchQuery(name); document.querySelector("#products")?.scrollIntoView({ behavior: "smooth" }); };
   const submitSearch = (event: FormEvent<HTMLFormElement>) => { event.preventDefault(); setSearchOpen(false); document.querySelector("#products")?.scrollIntoView({ behavior: "smooth" }); };
   const subscribe = (event: FormEvent<HTMLFormElement>) => { event.preventDefault(); setNewsletterStatus("success"); };
-  const checkout = () => { if (!cartCount) return; setCart({}); setCheckoutStatus(true); };
+  const checkout = () => {
+    if (!cartCount) return;
+    if (!deliveryAddress.zonecode || !deliveryAddress.address || !deliveryAddress.detail.trim()) {
+      setCheckoutMessage("배송지와 상세 주소를 입력해 주세요.");
+      return;
+    }
+    setCheckoutMessage("");
+    setCart({});
+    setCheckoutStatus(true);
+  };
   const signOutGoogle = () => { window.localStorage.removeItem("nova-google-user"); setGoogleUser(null); setAccountOpen(false); };
 
   return (
@@ -166,7 +219,7 @@ export default function Home() {
       {loginOpen && <div className="overlay google-login-overlay" role="dialog" aria-modal="true" aria-label="Google 로그인"><section className="google-login-panel"><button className="overlay-close" type="button" aria-label="로그인 닫기" onClick={() => setLoginOpen(false)}>×</button><div className="google-login-identity"><span className="google-mark" aria-hidden="true">G</span><p>NOVA ACCOUNT</p></div><h2>로그인하고<br />나의 사운드를<br /><em>이어가세요.</em></h2><p className="google-login-copy">Google 계정으로 로그인하면 주문 내역과 상품 문의를 한 곳에서 관리할 수 있습니다.</p><div className="google-connect google-widget" ref={googleButtonRef} aria-label="Google 계정으로 계속" /><div className="google-config-note"><b>{googleLoginMessage ? "안내" : "보안 로그인"}</b><span>{googleLoginMessage || "Google의 보안 계정 선택 창에서 로그인을 진행합니다."}</span></div></section></div>}
       {accountOpen && googleUser && <div className="overlay account-overlay" role="dialog" aria-modal="true" aria-label="내 계정"><section className="account-panel"><button className="overlay-close" type="button" aria-label="계정 메뉴 닫기" onClick={() => setAccountOpen(false)}>×</button><div className="account-avatar">{googleUser.picture ? <img src={googleUser.picture} alt="" /> : googleUser.name.slice(0, 1)}</div><p className="eyebrow dark"><span /> SIGNED IN WITH GOOGLE</p><h2>{googleUser.name}</h2><p>{googleUser.email}</p><div><a href={withBasePath("/#products")} onClick={() => setAccountOpen(false)}>주문 내역 보기</a><a href={withBasePath("/products/aura-h1#inquiries")} onClick={() => setAccountOpen(false)}>상품 문의 보기</a></div><button type="button" onClick={signOutGoogle}>로그아웃</button></section></div>}
       {selectedProduct && <div className="overlay" role="dialog" aria-modal="true" aria-label={`${selectedProduct.name} 상세 정보`}><section className="product-modal"><button className="overlay-close" aria-label="상세 정보 닫기" onClick={() => setSelectedProduct(null)}>×</button><div className="product-modal-image"><img src={selectedProduct.image} alt={`${selectedProduct.name} 헤드폰`} /></div><div className="product-modal-copy"><p className="eyebrow dark"><span /> {selectedProduct.type}</p><h2>{selectedProduct.name}</h2><p>{selectedProduct.description}</p><strong>{selectedProduct.price}</strong><button className="button button-dark" onClick={() => { addToCart(selectedProduct); setSelectedProduct(null); }}>장바구니에 담기 <Arrow /></button></div></section></div>}
-      {cartOpen && <aside className="cart-panel" aria-label="장바구니"><button className="cart-close" aria-label="장바구니 닫기" onClick={() => setCartOpen(false)}>×</button><p className="eyebrow dark"><span /> YOUR BAG</p>{checkoutStatus ? <><h2>주문 요청이<br />완료되었어요.</h2><p className="cart-note">로컬 데모 주문으로 접수되었습니다.</p></> : cartItems.length ? <><h2>선택한 사운드를<br />확인하세요.</h2><div className="cart-list">{cartItems.map((item) => <div className="cart-item" key={item.name}><img src={item.image} alt="" /><div><strong>{item.name}</strong><span>{item.price}</span><div className="quantity"><button aria-label={`${item.name} 수량 줄이기`} onClick={() => updateQuantity(item.name, -1)}>−</button><b>{item.quantity}</b><button aria-label={`${item.name} 수량 늘리기`} onClick={() => updateQuantity(item.name, 1)}>+</button></div></div></div>)}</div><button className="button button-dark" onClick={checkout}>주문 요청하기 <Arrow /></button></> : <><h2>장바구니가 비어 있어요.</h2><p className="cart-note">NOVA의 사운드를 골라 담아보세요.</p></>}<button className="cart-continue" onClick={() => setCartOpen(false)}>계속 쇼핑하기</button></aside>}
+      {cartOpen && <aside className="cart-panel" aria-label="장바구니"><button className="cart-close" aria-label="장바구니 닫기" onClick={() => setCartOpen(false)}>×</button><p className="eyebrow dark"><span /> YOUR BAG</p>{checkoutStatus ? <><h2>주문 요청이<br />완료되었어요.</h2><p className="cart-note">입력한 배송지로 주문이 접수되었습니다.</p></> : cartItems.length ? <><h2>선택한 사운드를<br />확인하세요.</h2><div className="cart-list">{cartItems.map((item) => <div className="cart-item" key={item.name}><img src={item.image} alt="" /><div><strong>{item.name}</strong><span>{item.price}</span><div className="quantity"><button aria-label={`${item.name} 수량 줄이기`} onClick={() => updateQuantity(item.name, -1)}>−</button><b>{item.quantity}</b><button aria-label={`${item.name} 수량 늘리기`} onClick={() => updateQuantity(item.name, 1)}>+</button></div></div></div>)}</div><DeliveryAddressForm value={deliveryAddress} onChange={(next) => { setDeliveryAddress(next); setCheckoutMessage(""); }} />{checkoutMessage && <p className="checkout-message" role="alert">{checkoutMessage}</p>}<button className="button button-dark" onClick={checkout}>주문 요청하기 <Arrow /></button></> : <><h2>장바구니가 비어 있어요.</h2><p className="cart-note">NOVA의 사운드를 골라 담아보세요.</p></>}<button className="cart-continue" onClick={() => setCartOpen(false)}>계속 쇼핑하기</button></aside>}
     </main>
   );
 }
