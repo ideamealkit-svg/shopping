@@ -40,7 +40,19 @@ const worker = {
       }, allowedWidths);
     }
 
-    return handler.fetch(request, env, ctx);
+    const response = await handler.fetch(request, env, ctx);
+    const responseHeaders = new Headers(response.headers);
+    // Google Identity Services keeps a popup open during legacy sign-in flows.
+    // This opt-in preserves the opener relationship so its completion message can
+    // return to the NOVA page rather than leaving a blank accounts.google.com window.
+    responseHeaders.set("Cross-Origin-Opener-Policy", "same-origin-allow-popups");
+    responseHeaders.set("Referrer-Policy", "no-referrer-when-downgrade");
+
+    return new Response(response.body, {
+      status: response.status,
+      statusText: response.statusText,
+      headers: responseHeaders,
+    });
   },
 };
 
