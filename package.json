@@ -12,6 +12,8 @@
     "start": "WRANGLER_LOG_PATH=.wrangler/wrangler.log vinext start",
     "test": "npm run build && node --test tests/rendered-html.test.mjs",
     "lint": "eslint . --ignore-pattern dist --ignore-pattern .next",
+    "ai:dev": "wrangler dev --config ai-worker/wrangler.toml --port 8787",
+    "ai:deploy": "wrangler deploy --config ai-worker/wrangler.toml",
     "db:generate": "drizzle-kit generate"
   },
   "dependencies": {

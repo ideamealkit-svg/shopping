@@ -5,6 +5,7 @@ import "@fontsource/dm-mono/500.css";
 import "pretendard/dist/web/static/pretendard-dynamic-subset.css";
 import "./globals.css";
 import PageBasePath from "./page-base-path";
+import NovaAiChat from "./nova-ai-chat";
 
 export const metadata: Metadata = {
   title: "NOVA — Precision sound, quietly designed",
@@ -22,5 +23,5 @@ export const metadata: Metadata = {
 };
 
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
-  return <html lang="ko"><body><PageBasePath />{children}</body></html>;
+  return <html lang="ko"><body><PageBasePath />{children}<NovaAiChat /></body></html>;
 }

@@ -1,0 +1,7 @@
+name = "nova-ai-chat"
+main = "src/index.ts"
+compatibility_date = "2026-08-12"
+
+[vars]
+GROQ_MODEL = "openai/gpt-oss-20b"
+ALLOWED_ORIGIN = "https://ideamealkit-svg.github.io"
