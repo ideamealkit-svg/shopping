@@ -2,6 +2,7 @@
 
 import { FormEvent, useEffect, useMemo, useState } from "react";
 import { CATALOG_STORAGE_KEY, CatalogProduct, defaultCatalog } from "../catalog";
+import { withBasePath } from "../site-path";
 
 type AdminTab = "dashboard" | "products" | "orders" | "shipping" | "customers";
 type OrderStatus = "결제 완료" | "배송 준비" | "배송 중" | "배송 완료" | "취소 요청";
@@ -73,7 +74,7 @@ export default function AdminPage() {
 
   return (
     <main className="commerce-admin">
-      <aside className="commerce-sidebar"><a href="/" className="commerce-brand">NOVA<span>COMMERCE</span></a><nav aria-label="관리자 메뉴">{([ ["dashboard", "대시보드"], ["products", "상품 관리"], ["orders", "주문 관리"], ["shipping", "배송 조회"], ["customers", "고객 · 문의"] ] as [AdminTab, string][]).map(([key, label]) => <button type="button" className={tab === key ? "is-active" : ""} onClick={() => { setTab(key); setNotice(""); }}>{label}</button>)}</nav><div className="commerce-sidebar-bottom"><a href="/">스토어 보기 ↗</a><span>LOCAL ADMIN / 2026</span></div></aside>
+      <aside className="commerce-sidebar"><a href={withBasePath("/")} className="commerce-brand">NOVA<span>COMMERCE</span></a><nav aria-label="관리자 메뉴">{([ ["dashboard", "대시보드"], ["products", "상품 관리"], ["orders", "주문 관리"], ["shipping", "배송 조회"], ["customers", "고객 · 문의"] ] as [AdminTab, string][]).map(([key, label]) => <button type="button" className={tab === key ? "is-active" : ""} onClick={() => { setTab(key); setNotice(""); }}>{label}</button>)}</nav><div className="commerce-sidebar-bottom"><a href={withBasePath("/")}>스토어 보기 ↗</a><span>LOCAL ADMIN / 2026</span></div></aside>
       <section className="commerce-content">
         <header className="commerce-topbar"><p>{tab === "dashboard" ? "OVERVIEW" : tab === "products" ? "PRODUCT OPERATIONS" : tab === "orders" ? "ORDER OPERATIONS" : tab === "shipping" ? "FULFILLMENT CENTER" : "CUSTOMER CARE"}</p><div><span>관리자</span><b>NA</b></div></header>
         {notice && <p className="commerce-notice" role="status">{notice}<button type="button" onClick={() => setNotice("")}>×</button></p>}

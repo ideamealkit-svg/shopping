@@ -7,7 +7,7 @@ const output = resolve(root, "out");
 const basePath = process.env.NEXT_PUBLIC_BASE_PATH ?? "";
 const port = 4173;
 const host = "127.0.0.1";
-const routes = ["/", "/products", "/admin", "/products/aura-h1", "/products/noir-x", "/products/tide-s", "/products/echo-pro"];
+const routes = ["/", "/products", "/admin", "/mypage", "/products/aura-h1", "/products/noir-x", "/products/tide-s", "/products/echo-pro"];
 
 const server = spawn(process.execPath, [join(root, "node_modules", "vinext", "dist", "cli.js"), "start", "--port", String(port), "--hostname", host], {
   cwd: root,
@@ -54,7 +54,13 @@ try {
     await writeFile(file, await response.text(), "utf8");
   }
 
-  console.log(`Exported ${routes.length} GitHub Pages routes to out/`);
+  // Prevent GitHub Pages from running Jekyll (which ignores _next / _assets)
+  await writeFile(join(output, ".nojekyll"), "", "utf8");
+
+  // Create 404.html SPA fallback for direct subpath navigations
+  await cp(join(output, "index.html"), join(output, "404.html"));
+
+  console.log(`Exported ${routes.length} GitHub Pages routes, .nojekyll, and 404.html to out/`);
 } finally {
   stop();
 }
