@@ -74,6 +74,13 @@ export default function ProductDetailClient({ slug }: { slug?: string }) {
     setNotice("장바구니에 제품을 담았습니다.");
   };
 
+  const buyNow = () => {
+    if (!product) return;
+    const current = JSON.parse(window.localStorage.getItem("nova-cart") ?? "{}");
+    window.localStorage.setItem("nova-cart", JSON.stringify({ ...current, [product.name]: (current[product.name] ?? 0) + 1 }));
+    window.location.href = withBasePath("/#products");
+  };
+
   const submitReview = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     if (!reviewForm.author.trim() || !reviewForm.body.trim()) return setNotice("작성자와 후기를 입력해 주세요.");
@@ -110,7 +117,10 @@ export default function ProductDetailClient({ slug }: { slug?: string }) {
         <div className="detail-copy">
           <p className="detail-kicker">{product.type}</p><h1>{product.name}</h1><p className="detail-description">{product.description}</p><p className="detail-price">{product.price}</p>
           <div className="detail-status"><span className={product.stock > 0 ? "is-available" : "is-soldout"}>{product.stock > 0 ? "IN STOCK" : "SOLD OUT"}</span><span>{product.stock > 0 ? `오늘 출고 가능 · 잔여 ${product.stock}개` : "재입고 알림을 준비 중입니다."}</span></div>
-          <button className="detail-add" disabled={!product.stock} onClick={addToCart}>{added ? "장바구니에 담았습니다" : product.stock ? "장바구니에 담기" : "품절"} <span>→</span></button>
+          <div style={{ display: "grid", gap: "10px", margin: "16px 0 20px" }}>
+            <button className="detail-add" disabled={!product.stock} onClick={addToCart}>{added ? "장바구니에 담았습니다" : product.stock ? "장바구니에 담기" : "품절"} <span>→</span></button>
+            <button type="button" className="button button-dark" disabled={!product.stock} onClick={buyNow} style={{ width: "100%", minHeight: "48px", justifyContent: "center" }}>지금 바로 구매하기 ({product.price})</button>
+          </div>
           <p className="detail-delivery">무료 익일 배송 · 14일 이내 무료 반품 · 정품 보증</p>
         </div>
       </section>
