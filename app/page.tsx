@@ -159,7 +159,16 @@ export default function Home() {
     if (!savedCatalog) return;
     try {
       const parsed = JSON.parse(savedCatalog);
-      if (Array.isArray(parsed)) setCatalog(parsed);
+      if (Array.isArray(parsed)) {
+        const hasLite = parsed.some((product: CatalogProduct) => product.name === "NOVA LITE");
+        if (!hasLite) {
+          const updated = [...parsed, defaultCatalog[4]];
+          setCatalog(updated);
+          window.localStorage.setItem(CATALOG_STORAGE_KEY, JSON.stringify(updated));
+        } else {
+          setCatalog(parsed);
+        }
+      }
     } catch { window.localStorage.removeItem(CATALOG_STORAGE_KEY); }
   }, []);
 

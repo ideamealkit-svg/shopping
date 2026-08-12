@@ -15,6 +15,7 @@ export const defaultCatalog: CatalogProduct[] = [
   { name: "NOIR X", type: "ADAPTIVE NOISE CONTROL", price: "₩329,000", image: "/products/noir-x.png", description: "상황에 맞춰 소음을 조절하는 적응형 노이즈 캔슬링 헤드폰.", stock: 18, active: true },
   { name: "TIDE S", type: "SPATIAL AUDIO", price: "₩269,000", image: "/products/tide-s.png", description: "공간감 있는 몰입을 위한 가볍고 선명한 데일리 헤드폰.", stock: 31, active: true },
   { name: "ECHO PRO", type: "REFERENCE WIRELESS", price: "₩349,000", image: "/products/echo-pro.png", description: "섬세한 디테일까지 확인하는 레퍼런스 튜닝의 무선 헤드폰.", stock: 12, active: true },
+  { name: "NOVA LITE", type: "SPECIAL EDITION", price: "₩1,000", image: "/products/tide-s.png", description: "1,000원에 체험하는 NOVA 스페셜 스타터 에디션.", stock: 99, active: true },
 ];
 
 export const productSlug = (product: Pick<CatalogProduct, "name">) => product.name.toLowerCase().replace(/\s+/g, "-");
